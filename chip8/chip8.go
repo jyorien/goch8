@@ -2,7 +2,6 @@ package chip8
 import (
 	"io/ioutil"
 	"log"
-	"fmt"
 	"math/rand/v2"
 )
 const START_ADDRESS = 0x200
@@ -59,9 +58,7 @@ func NewChip8() *Chip8 {
 // Clear Display
 func (ch8 *Chip8) OP_00E0() {
 	for  i := 0; i < len(ch8.video); i++ {
-		for j := 0; j < len(ch8.video[0]); j++ {
-			ch8.video[i][j] = 0
-		}
+		ch8.video[i] = 0
 	}
 }
 
@@ -73,7 +70,7 @@ func (ch8 *Chip8) OP_00EE() {
 
 // Jump to nnn
 func (ch8 *Chip8) OP_1nnn() {
-	pc = ch8.opcode & 0x0FFF
+	ch8.pc = ch8.opcode & 0x0FFF
 }
 
 /// Call Subroutine at nnn
@@ -89,7 +86,7 @@ func (ch8 *Chip8) OP_3xkk() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	kk := ch8.opcode & 0x00FF
 
-	if (ch8.registers[Vx] == kk) {
+	if (uint16(ch8.registers[Vx]) == kk) {
 		ch8.pc += 2
 	}
 }
@@ -100,7 +97,7 @@ func (ch8 *Chip8) OP_4xkk() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	kk := ch8.opcode & 0x00FF
 
-	if (ch8.registers[Vx] != kk) {
+	if (uint16(ch8.registers[Vx]) != kk) {
 		ch8.pc += 2
 	}
 }
@@ -118,14 +115,14 @@ func (ch8 *Chip8) OP_5xy0() {
 func (ch8 *Chip8) OP_6xkk() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	kk := ch8.opcode & 0x00FF
-	ch8.registers[Vx] = kk
+	ch8.registers[Vx] = uint8(kk)
 }
 
 // Set register x = register x + kk
 func (ch8 *Chip8) OP_7xkk() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	kk := ch8.opcode & 0x00FF
-	ch8.registers[Vx] = ch8.registers[Vx] + kk
+	ch8.registers[Vx] = ch8.registers[Vx] + uint8(kk)
 }
 
 // Set register x = register y
@@ -162,13 +159,13 @@ func (ch8 *Chip8) OP_8xy3() {
 func (ch8 *Chip8) OP_8xy4() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	Vy := (ch8.opcode & 0x00F0) >> 4
-	res := = ch8.registers[Vx] + ch8.registers[Vy]
+	res := ch8.registers[Vx] + ch8.registers[Vy]
 	if res > 0xFF {
 		ch8.registers[0xF] = 1
 	} else {
 		ch8.registers[0xF] = 0
 	}
-	ch8.registers[Vx] = sum & 0xFF
+	ch8.registers[Vx] = res & 0xFF
 	
 }
 
@@ -206,7 +203,7 @@ func (ch8 *Chip8) OP_8xy7() {
 // Set register x = register x << 1 (Shift Left)
 func (ch8 *Chip8) OP_8xyE() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
-	ch8.registers[0xF] = registers[Vx] >> 7
+	ch8.registers[0xF] = ch8.registers[Vx] >> 7
 	ch8.registers[Vx] <<= 1
 }
 
@@ -228,7 +225,7 @@ func (ch8 *Chip8) OP_Annn() {
 // Jump to nnn + register 0
 func (ch8 *Chip8) OP_Bnnn() {
 	nnn := ch8.opcode & 0x0FFF
-	ch8.pc = nnn + ch8.registers[0]
+	ch8.pc = nnn + uint16(ch8.registers[0])
 }
 
 // Set register x = random byte & kk
@@ -236,7 +233,7 @@ func (ch8 *Chip8) Cxkk() {
 	Vx := ch8.opcode & 0x0F00
 	kk := ch8.opcode & 0x00FF
 	randByte := rand.IntN(256)
-	registers[Vx] = randByte & kk
+	ch8.registers[Vx] = uint8(randByte) & uint8(kk)
 }
 
 // Display sprite at location (Vx, Vy)
@@ -252,13 +249,13 @@ func (ch8 *Chip8) Dxyn() {
 	// no collision
 	ch8.registers[0xF] = 0
 
-	for row := 0; row < n; ++row {
-		spriteByte := ch8.memory[ch8.indexRegister + row]
-		for col := 0; col < 8; ++col {
+	for row := 0; uint16(row) < n; row++ {
+		spriteByte := ch8.memory[ch8.indexRegister + uint16(row)]
+		for col := 0; col < 8; col++ {
 			spritePixel := spriteByte & (0x80 >> col)
-			screenPixel := &ch8.video[(yPos + row) * VIDEO_WIDTH + (xPos + col)]
+			screenPixel := &ch8.video[(yPos + uint8(row)) * VIDEO_WIDTH + (xPos + uint8(col))]
 
-			if (spritePixel) {
+			if (spritePixel != 0) {
 
 				// collision
 				if (*screenPixel == 0xFFFFFFFF) {
@@ -277,7 +274,7 @@ func (ch8 *Chip8) Dxyn() {
 func (ch8 *Chip8) Ex9E() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	key := ch8.registers[Vx]
-	if ch8.keypad[key] { 
+	if ch8.keypad[key] == 1 { 
 		ch8.pc += 2
 	}
 }
@@ -286,7 +283,7 @@ func (ch8 *Chip8) Ex9E() {
 func (ch8 *Chip8) ExA1() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	key := ch8.registers[Vx]
-	if !ch8.keypad[key] { 
+	if ch8.keypad[key] == 0 { 
 		ch8.pc += 2
 	}
 }
@@ -301,8 +298,8 @@ func (ch8 *Chip8) Fx07() {
 func (ch8 *Chip8) Fx0A() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	for i, ele := range ch8.registers {
-		if ele {
-			ch8.registers[Vx] = i
+		if ele == 1 {
+			ch8.registers[Vx] = uint8(i)
 			return
 		}
 	}
@@ -323,13 +320,13 @@ func (ch8 *Chip8) Fx18() {
 // Add register x to indexRegister
 func (ch8 *Chip8) Fx1E() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
-	ch8.indexRegister += ch8.registers[Vx]
+	ch8.indexRegister += uint16(ch8.registers[Vx])
 }
  
 // Set indexRegister to location of sprite in Vx
 func (ch8 *Chip8) Fx29() {
 	Vx := (ch8.opcode & 0xF00) >> 8
-	ch8.indexRegister = FONT_SET_START_ADDRESS + (5*ch8.registers[Vx])
+	ch8.indexRegister = FONT_SET_START_ADDRESS + uint16(5*ch8.registers[Vx])
 }
 
 // Store BCD of register x in indexRegister (hundreds), indexRegister+1 (tens), indexRegister+2 (ones)
@@ -346,15 +343,15 @@ func (ch8 *Chip8) Fx33() {
 // Store registers 0 to x in memory starting from location in indexRegister
 func (ch8 *Chip8) Fx55() {
 	Vx := (ch8.opcode & 0xF00) >> 8
-	for i:= 0; i <= Vx; i++ {
-		ch8.memory[ch8.indexRegister+i] = ch8.registers[i]
+	for i:= 0; uint16(i) <= Vx; i++ {
+		ch8.memory[ch8.indexRegister+uint16(i)] = uint8(ch8.registers[i])
 	}	
 }
 
 // Read registers 0 to x in memory starting from location in indexRegister
-func (ch8 *Chip8) Fx55() {
+func (ch8 *Chip8) Fx65() {
 	Vx := (ch8.opcode & 0xF00) >> 8
-	for i:= 0; i <= Vx; i++ {
-		ch8.registers[i] = ch8.memory[ch8.indexRegister+i]
+	for i:= 0; uint16(i) <= Vx; i++ {
+		ch8.registers[i] = uint8(ch8.memory[ch8.indexRegister+uint16(i)])
 	}	
 }
