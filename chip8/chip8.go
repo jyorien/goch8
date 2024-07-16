@@ -41,9 +41,9 @@ type Chip8 struct {
 }
 
 func (ch8 Chip8) LoadROM() {
-	data, err := ioutil.ReadFile("roms/ibm_logo.ch8")
+	data, err := ioutil.ReadFile("../roms/ibm_logo.ch8")
 	if err != nil {
-		log.Fatalf("Failed to read file\n")
+		log.Fatal(err)
 	}
 	copy(ch8.memory[START_ADDRESS:], data)
 }
