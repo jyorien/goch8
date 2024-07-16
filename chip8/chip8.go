@@ -54,6 +54,45 @@ func NewChip8() *Chip8 {
 	return &ch8
 }
 
+func (ch8 *Chip8) Execute(opcode string) {
+	switch opcode {
+	case "00E0": ch8.OP_00E0()
+	case "00EE": ch8.OP_00EE()
+	case "1nnn": ch8.OP_1nnn()
+	case "2nnn": ch8.OP_2nnn()
+	case "3xkk": ch8.OP_3xkk()
+	case "4xkk": ch8.OP_4xkk()
+	case "5xy0": ch8.OP_5xy0()
+	case "6xkk": ch8.OP_6xkk()
+	case "7xkk": ch8.OP_7xkk()
+	case "8xy0": ch8.OP_8xy0()
+	case "8xy1": ch8.OP_8xy1()
+	case "8xy2": ch8.OP_8xy2()
+	case "8xy3": ch8.OP_8xy3()
+	case "8xy4": ch8.OP_8xy4()
+	case "8xy5": ch8.OP_8xy5()
+	case "8xy6": ch8.OP_8xy6()
+	case "8xy7": ch8.OP_8xy7()
+	case "8xyE": ch8.OP_8xyE()
+	case "9xy0": ch8.OP_9xy0()
+	case "Annn": ch8.OP_Annn()
+	case "Bnnn": ch8.OP_Bnnn()
+	case "Cxkk": ch8.OP_Cxkk()
+	case "Dxyn": ch8.OP_Dxyn()
+	case "Ex9E": ch8.OP_Ex9E()
+	case "ExA1": ch8.OP_ExA1()
+	case "Fx07": ch8.OP_Fx07()
+	case "Fx0A": ch8.OP_Fx0A()
+	case "Fx15": ch8.OP_Fx15()
+	case "Fx18": ch8.OP_Fx18()
+	case "Fx1E": ch8.OP_Fx1E()
+	case "Fx29": ch8.OP_Fx29()
+	case "Fx33": ch8.OP_Fx33()
+	case "Fx55": ch8.OP_Fx55()
+	case "Fx65": ch8.OP_Fx65()
+}
+}
+
 
 // Clear Display
 func (ch8 *Chip8) OP_00E0() {
@@ -229,7 +268,7 @@ func (ch8 *Chip8) OP_Bnnn() {
 }
 
 // Set register x = random byte & kk
-func (ch8 *Chip8) Cxkk() {
+func (ch8 *Chip8) OP_Cxkk() {
 	Vx := ch8.opcode & 0x0F00
 	kk := ch8.opcode & 0x00FF
 	randByte := rand.IntN(256)
@@ -237,7 +276,7 @@ func (ch8 *Chip8) Cxkk() {
 }
 
 // Display sprite at location (Vx, Vy)
-func (ch8 *Chip8) Dxyn() {
+func (ch8 *Chip8) OP_Dxyn() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	Vy := (ch8.opcode & 0x00F0) >> 4
 	n := (ch8.opcode & 0x000F)
@@ -271,7 +310,7 @@ func (ch8 *Chip8) Dxyn() {
 }
 
 // Skip instruction if key Vx pressed
-func (ch8 *Chip8) Ex9E() {
+func (ch8 *Chip8) OP_Ex9E() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	key := ch8.registers[Vx]
 	if ch8.keypad[key] == 1 { 
@@ -280,7 +319,7 @@ func (ch8 *Chip8) Ex9E() {
 }
 
 // Skip instruction if key Vx not pressed
-func (ch8 *Chip8) ExA1() {
+func (ch8 *Chip8) OP_ExA1() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	key := ch8.registers[Vx]
 	if ch8.keypad[key] == 0 { 
@@ -289,13 +328,13 @@ func (ch8 *Chip8) ExA1() {
 }
 
 // Set register x to delay timer value
-func (ch8 *Chip8) Fx07() {
+func (ch8 *Chip8) OP_Fx07() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	ch8.registers[Vx] = ch8.delayTimer
 }
 
 // Wait for key press and store value of key in register x
-func (ch8 *Chip8) Fx0A() {
+func (ch8 *Chip8) OP_Fx0A() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	for i, ele := range ch8.registers {
 		if ele == 1 {
@@ -307,30 +346,30 @@ func (ch8 *Chip8) Fx0A() {
 	ch8.pc -= 2
 }
 // Set delayTimer to register x
-func (ch8 *Chip8) Fx15() {
+func (ch8 *Chip8) OP_Fx15() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	ch8.delayTimer = ch8.registers[Vx]
 }
 // Set soundTimer to register x
-func (ch8 *Chip8) Fx18() {
+func (ch8 *Chip8) OP_Fx18() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	ch8.soundTimer = ch8.registers[Vx]
 }
 
 // Add register x to indexRegister
-func (ch8 *Chip8) Fx1E() {
+func (ch8 *Chip8) OP_Fx1E() {
 	Vx := (ch8.opcode & 0x0F00) >> 8
 	ch8.indexRegister += uint16(ch8.registers[Vx])
 }
  
 // Set indexRegister to location of sprite in Vx
-func (ch8 *Chip8) Fx29() {
+func (ch8 *Chip8) OP_Fx29() {
 	Vx := (ch8.opcode & 0xF00) >> 8
 	ch8.indexRegister = FONT_SET_START_ADDRESS + uint16(5*ch8.registers[Vx])
 }
 
 // Store BCD of register x in indexRegister (hundreds), indexRegister+1 (tens), indexRegister+2 (ones)
-func (ch8 *Chip8) Fx33() {
+func (ch8 *Chip8) OP_Fx33() {
 	Vx := (ch8.opcode & 0xF00) >> 8
 	value := ch8.registers[Vx]
 	ch8.memory[ch8.indexRegister+2] = value % 10
@@ -341,7 +380,7 @@ func (ch8 *Chip8) Fx33() {
 }
 
 // Store registers 0 to x in memory starting from location in indexRegister
-func (ch8 *Chip8) Fx55() {
+func (ch8 *Chip8) OP_Fx55() {
 	Vx := (ch8.opcode & 0xF00) >> 8
 	for i:= 0; uint16(i) <= Vx; i++ {
 		ch8.memory[ch8.indexRegister+uint16(i)] = uint8(ch8.registers[i])
@@ -349,7 +388,7 @@ func (ch8 *Chip8) Fx55() {
 }
 
 // Read registers 0 to x in memory starting from location in indexRegister
-func (ch8 *Chip8) Fx65() {
+func (ch8 *Chip8) OP_Fx65() {
 	Vx := (ch8.opcode & 0xF00) >> 8
 	for i:= 0; uint16(i) <= Vx; i++ {
 		ch8.registers[i] = uint8(ch8.memory[ch8.indexRegister+uint16(i)])
